@@ -1,0 +1,92 @@
+# dependencies
+/node_modules
+/.pnpm-store
+
+# env
+.env
+.env.*
+!.env.example
+
+# build output
+/dist
+/build
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma
+/generated/prisma
+/prisma/generated
+/node_modules/.prisma
+
+# misc
+coverage
+.tmp
+.cache
+
+# optional
+*.local
+app/backend/dist/index.d.ts.map
+app/backend/dist/generated/prisma/browser.d.ts.map
+app/backend/dist/index.d.ts
+app/backend/dist/index.js
+app/backend/dist/index.js.map
+app/backend/dist/generated/prisma/browser.d.ts
+app/backend/dist/generated/prisma/browser.js
+app/backend/dist/generated/prisma/browser.js.map
+app/backend/dist/generated/prisma/client.d.ts
+app/backend/dist/generated/prisma/client.d.ts.map
+app/backend/dist/generated/prisma/client.js
+app/backend/dist/generated/prisma/client.js.map
+app/backend/dist/generated/prisma/commonInputTypes.d.ts
+app/backend/dist/generated/prisma/commonInputTypes.d.ts.map
+app/backend/dist/generated/prisma/commonInputTypes.js
+app/backend/dist/generated/prisma/commonInputTypes.js.map
+app/backend/dist/generated/prisma/enums.d.ts
+app/backend/dist/generated/prisma/enums.d.ts.map
+app/backend/dist/generated/prisma/enums.js
+app/backend/dist/generated/prisma/enums.js.map
+app/backend/dist/generated/prisma/models.d.ts
+app/backend/dist/generated/prisma/models.d.ts.map
+app/backend/dist/generated/prisma/models.js
+app/backend/dist/generated/prisma/models.js.map
+app/backend/dist/generated/prisma/internal/class.d.ts
+app/backend/dist/generated/prisma/internal/class.d.ts.map
+app/backend/dist/generated/prisma/internal/class.js
+app/backend/dist/generated/prisma/internal/class.js.map
+app/backend/dist/generated/prisma/internal/prismaNamespace.d.ts
+app/backend/dist/generated/prisma/internal/prismaNamespace.d.ts.map
+app/backend/dist/generated/prisma/internal/prismaNamespace.js
+app/backend/dist/generated/prisma/internal/prismaNamespace.js.map
+app/backend/dist/generated/prisma/internal/prismaNamespaceBrowser.d.ts
+app/backend/dist/generated/prisma/internal/prismaNamespaceBrowser.d.ts.map
+app/backend/dist/generated/prisma/internal/prismaNamespaceBrowser.js
+app/backend/dist/generated/prisma/internal/prismaNamespaceBrowser.js.map
+app/backend/dist/generated/prisma/models/Repository.d.ts
+app/backend/dist/generated/prisma/models/Repository.d.ts.map
+app/backend/dist/generated/prisma/models/Repository.js
+app/backend/dist/generated/prisma/models/Repository.js.map
+app/backend/dist/generated/prisma/models/Subscription.d.ts
+app/backend/dist/generated/prisma/models/Subscription.d.ts.map
+app/backend/dist/generated/prisma/models/Subscription.js
+app/backend/dist/generated/prisma/models/Subscription.js.map
+app/backend/dist/services/prisma_setup/database.d.ts
+app/backend/dist/services/prisma_setup/database.d.ts.map
+app/backend/dist/services/prisma_setup/database.js
+app/backend/dist/services/prisma_setup/database.js.map
