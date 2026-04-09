@@ -12,9 +12,17 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  createdAt     DateTime  @default(now())
+
+  subscriptions Subscription[]
+}
+
 model Repository {
-  id            Int   @id @default(autoincrement())
-  fullName      String   @unique
+  id            Int       @id @default(autoincrement())
+  fullName      String    @unique
   lastSeenTag   String?
 
   subscriptions Subscription[]
@@ -22,14 +30,15 @@ model Repository {
 
 model Subscription {
   id            String @id @default(uuid())
-  email         String
   confirmed     Boolean @default(false)
 
+  userId        String
+  user          User @relation(fields: [userId], references: [id])
   repositoryId  Int
   repository    Repository @relation(fields: [repositoryId], references: [id])
 
-  confirmationToken String?
-  unsubscribeToken   String?
+  confirmationToken String? @unique
+  unsubscribeToken   String? @unique
 
-  @@unique([email, repositoryId])
+  @@unique([userId, repositoryId])
 }

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "Github notifier",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
