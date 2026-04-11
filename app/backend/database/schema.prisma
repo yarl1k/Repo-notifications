@@ -24,6 +24,7 @@ model Repository {
   id            Int       @id @default(autoincrement())
   fullName      String    @unique
   lastSeenTag   String?
+  etag          String?
 
   subscriptions Subscription[]
 }
@@ -38,6 +39,7 @@ model Subscription {
   repository    Repository @relation(fields: [repositoryId], references: [id])
 
   confirmationToken String? @unique
+  confirmationTokenExpiresAt DateTime?
   unsubscribeToken   String? @unique
 
   @@unique([userId, repositoryId])

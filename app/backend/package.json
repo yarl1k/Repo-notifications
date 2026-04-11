@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && tsc && cp -r src/services/nodemailer/mail-templates dist/services/nodemailer/",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/index.ts",
@@ -20,9 +20,11 @@
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "axios": "^1.14.0",
+    "bullmq": "^5.73.4",
     "croner": "^10.0.1",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
+    "ioredis": "^5.10.1",
     "nodemailer": "^8.0.5",
     "pg": "^8.20.0"
   },
