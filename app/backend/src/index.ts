@@ -1,6 +1,6 @@
 import express from 'express';
 import mainRouter from "./routers/index.js";
-import { initScanner } from './services/scanner.service.js';
+import { initScanner } from './services/scanner/scanner.service.js';
 import './services/redis/queue.service.js';
 import { prisma } from './services/prisma_setup/database.js';
 import helmet from 'helmet';

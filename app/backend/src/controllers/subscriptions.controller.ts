@@ -15,8 +15,7 @@ import {
     setCooldownInQueueConfirmation,
 } from './subscription.helpers.js';
 
-//  POST /api/subscribe
-
+// POST /api/subscribe
 export const subscribeToRepo = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, repo } = req.body;
@@ -37,32 +36,29 @@ export const subscribeToRepo = async (req: Request, res: Response): Promise<void
         const fullRepoName = `${owner}/${repoName}`;
         const token = generateConfirmationCode();
         const expiry = getConfirmationExpiry();
+        const existingSub = await findExistingSubscription(email, fullRepoName);
 
-        try {
-            const subscription = await createSubscription(email, fullRepoName, token, expiry);
-            await queueConfirmationEmail(email, token, fullRepoName);
-            res.status(200).json({
-                message: 'Subscription successful. Confirmation email sent.',
-                subscriptionId: subscription.id,
-            });
-        } catch (dbError: any) {
-            if (dbError.code !== 'P2002') throw dbError;
-
-            // Unique constraint: subscription already exists for this email + repo
-            const existingSub = await findExistingSubscription(email, fullRepoName);
-            if (!existingSub) throw dbError;
-
+        if (existingSub) {
             if (existingSub.confirmed) {
                 res.status(409).json({ error: 'Email already subscribed to this repository.' });
                 return;
             }
 
-            // Unconfirmed — refresh the code and resend
             const newToken = generateConfirmationCode();
             await refreshConfirmationToken(existingSub.id, newToken, expiry);
             await setCooldownInQueueConfirmation(email, newToken, fullRepoName);
+
             res.status(200).json({ message: 'Confirmation email resent.', subscriptionId: existingSub.id });
+            return;
         }
+        const subscription = await createSubscription(email, fullRepoName, token, expiry);
+        await queueConfirmationEmail(email, token, fullRepoName);
+
+        res.status(200).json({
+            message: 'Subscription successful. Confirmation email sent.',
+            subscriptionId: subscription.id,
+        });
+
     } catch (error: any) {
         console.error(error);
         res.status(error.status ?? 500).json({
