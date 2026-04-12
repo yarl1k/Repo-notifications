@@ -22,9 +22,9 @@ vi.mock('../services/github.service.js', () => ({
     validateRepo: vi.fn(),
 }));
 
-vi.mock('../services/nodemailer/email.service.js', () => ({
+vi.mock('../services/resend/email.service.js', () => ({
     sendEmailSubscriptionConfirmation: vi.fn(),
-    sendEmailUnsubscriptionNotify: vi.fn(),
+    sendEmailNotification: vi.fn(),
 }));
 
 vi.mock('../services/redis/queue.service.js', () => ({

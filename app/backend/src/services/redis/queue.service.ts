@@ -3,7 +3,7 @@ import { Queue, Worker, Job } from "bullmq";
 import {
     sendEmailNotification,
     sendEmailSubscriptionConfirmation,
-} from "../nodemailer/email.service.js";
+} from "../resend/email.service.js";
 import { redisConnection } from "./redis.setup.js";
 import { emailsSentCounter } from "../metrics.service.js";
 
