@@ -1,4 +1,4 @@
-# Repo Notify
+# [Repo Notify](https://yarl1k.tech/)
 
 A monolith service that monitors GitHub repositories for new releases and sends email notifications to subscribers.
 
@@ -45,7 +45,7 @@ Two email types: `subscription_confirmation` and `release_notification`, each us
 
 ### Hosting
 
-You can find basic example of Full-Stack application with simple html web-page here: [Repo Notify](yarl1k.tech). It locates on digitalOcean, and all code is conterenized in Docker.
+You can find basic example of Full-Stack application with simple html web-page here: [Repo Notify](https://yarl1k.tech/). It locates on digitalOcean, and all code is conterenized in Docker.
 
 ## API
 
