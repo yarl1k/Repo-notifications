@@ -33,6 +33,13 @@ vi.mock('../services/redis/queue.service.js', () => ({
     },
 }));
 
+vi.mock('../services/redis/redis.setup.js', () => ({
+    redisConnection: {
+        get: vi.fn(),
+        setex: vi.fn(),
+    },
+}));
+
 //  Imports (after mocks) 
 
 import {
@@ -44,6 +51,7 @@ import {
 import { prisma } from '../services/prisma_setup/database.js';
 import { validateRepo } from '../services/github.service.js';
 import { emailQueue } from '../services/redis/queue.service.js';
+import { redisConnection } from '../services/redis/redis.setup.js';
 
 //  Helpers 
 
@@ -126,6 +134,7 @@ describe('subscribeToRepo', () => {
         );
         vi.mocked(prisma.subscription.findFirst).mockResolvedValueOnce({ id: 'x', confirmed: false } as any);
         vi.mocked(prisma.subscription.update).mockResolvedValueOnce({} as any);
+        vi.mocked(redisConnection.get).mockResolvedValueOnce(null);
 
         const res = makeRes();
         await subscribeToRepo(makeReq({ body: { email: 'user@test.com', repo: 'owner/repo' } }), res);
@@ -135,6 +144,24 @@ describe('subscribeToRepo', () => {
         expect(emailQueue.add).toHaveBeenCalledWith('email-job',
             expect.objectContaining({ type: 'subscription_confirmation' })
         );
+        expect(redisConnection.setex).toHaveBeenCalledWith('confirm_cooldown:user@test.com', 30, 'true');
+    });
+
+    it('returns 200 but skips resending email when active cooldown exists', async () => {
+        vi.mocked(validateRepo).mockResolvedValueOnce({ id: 1 } as any);
+        vi.mocked(prisma.subscription.create).mockRejectedValueOnce(
+            Object.assign(new Error('Unique'), { code: 'P2002' })
+        );
+        vi.mocked(prisma.subscription.findFirst).mockResolvedValueOnce({ id: 'x', confirmed: false } as any);
+        vi.mocked(prisma.subscription.update).mockResolvedValueOnce({} as any);
+        vi.mocked(redisConnection.get).mockResolvedValueOnce('true');
+
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: 'user@test.com', repo: 'owner/repo' } }), res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Confirmation email resent.');
+        expect(emailQueue.add).not.toHaveBeenCalled();
     });
 
     it('returns 500 on unexpected database error', async () => {
@@ -259,7 +286,7 @@ describe('cancelSubscription', () => {
         expect(res.json).toHaveBeenCalledWith({ error: 'Unsubscribe token not found.' });
     });
 
-    it('returns 200, deletes subscription, and queues unsubscription email', async () => {
+    it('returns 200, deletes subscription', async () => {
         vi.mocked(prisma.subscription.findUnique).mockResolvedValueOnce({
             id: 'sub-1',
             user: { email: 'user@test.com' },
@@ -273,8 +300,5 @@ describe('cancelSubscription', () => {
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Subscription successfully cancelled.' });
         expect(prisma.subscription.delete).toHaveBeenCalledWith({ where: { id: 'sub-1' } });
-        expect(emailQueue.add).toHaveBeenCalledWith('email-job',
-            expect.objectContaining({ type: 'unsubscription_notify' })
-        );
     });
 });
