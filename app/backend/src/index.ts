@@ -7,7 +7,7 @@ import './services/redis/queue.service.js';
 import { prisma } from './services/prisma_setup/database.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-
+import cors from 'cors';
 import { metrics } from './services/metrics.service.js';
 import { requireApiKeyAuth } from './services/middlewares/auth.middleware.js';
 
@@ -17,6 +17,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.set('trust proxy', 1);
+
+app.use(cors());
 
 app.use(helmet({
     contentSecurityPolicy: false,
