@@ -3,7 +3,7 @@ import { redisConnection } from './redis/redis.setup.js';
 
 export const validateRepo = async (owner: string, repo: string) => {
     if (!owner || !repo || typeof owner !== 'string' || typeof repo !== 'string') {
-        const error: any = new Error('Invalid repository data format.');
+        const error: any = new Error('Invalid input (e.g., invalid repo format).');
         error.status = 400;
         throw error;
     }

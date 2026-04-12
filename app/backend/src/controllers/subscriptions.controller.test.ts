@@ -75,16 +75,49 @@ describe('subscribeToRepo', () => {
         const res = makeRes();
         await subscribeToRepo(makeReq({ body: { repo: 'owner/repo' } }), res);
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid input data type.' });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid input (e.g., invalid repo format).' });
+    });
+
+    it('returns 400 when email has no @ or domain', async () => {
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: '12121', repo: 'owner/repo' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid input (e.g., invalid repo format).' });
+        expect(validateRepo).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when email is missing TLD', async () => {
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: 'user@host', repo: 'owner/repo' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(validateRepo).not.toHaveBeenCalled();
     });
 
     it('returns 400 when repo is not in owner/repo format', async () => {
         const res = makeRes();
         await subscribeToRepo(makeReq({ body: { email: 'u@test.com', repo: 'badformat' } }), res);
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            error: 'Repository must be in the format "owner/repo".',
-        });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid input (e.g., invalid repo format).' });
+    });
+
+    it('returns 400 when repo contains special characters', async () => {
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: 'u@test.com', repo: 'owner/<script>' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(validateRepo).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when repo has path traversal attempt', async () => {
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: 'u@test.com', repo: '../etc/passwd' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(validateRepo).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when repo has extra slashes', async () => {
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: 'u@test.com', repo: 'owner/repo/extra' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it('returns 404 when validateRepo throws a 404 error', async () => {
@@ -119,7 +152,7 @@ describe('subscribeToRepo', () => {
         await subscribeToRepo(makeReq({ body: { email: 'user@test.com', repo: 'owner/repo' } }), res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Confirmation email resent.');
+        expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Subscription successful. Confirmation email sent.');
         expect(emailQueue.add).toHaveBeenCalledWith('email-job',
             expect.objectContaining({ type: 'subscription_confirmation' })
         );
@@ -135,9 +168,29 @@ describe('subscribeToRepo', () => {
         await subscribeToRepo(makeReq({ body: { email: 'user@test.com', repo: 'owner/repo' } }), res);
 
         expect(res.status).toHaveBeenCalledWith(200);
-        expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Confirmation email resent.');
+        expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Subscription successful. Confirmation email sent.');
         expect(prisma.subscription.update).not.toHaveBeenCalled();
         expect(emailQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('trims and lowercases email before processing', async () => {
+        vi.mocked(validateRepo).mockResolvedValueOnce({ id: 1 } as any);
+        vi.mocked(prisma.subscription.findFirst).mockResolvedValueOnce(null);
+        vi.mocked(prisma.subscription.create).mockResolvedValueOnce({ id: 'sub-1' } as any);
+
+        const res = makeRes();
+        await subscribeToRepo(makeReq({ body: { email: '  User@Test.COM  ', repo: 'owner/repo' } }), res);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(prisma.subscription.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                user: expect.objectContaining({
+                    connectOrCreate: expect.objectContaining({
+                        where: { email: 'user@test.com' },
+                    }),
+                }),
+            }),
+        }));
     });
 
     it('returns 200 and queues confirmation email on new subscription', async () => {
@@ -175,11 +228,23 @@ describe('subscribeToRepo', () => {
 describe('confirmSubscription', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('returns 400 when token is missing', async () => {
+    it('returns 400 when token is missing or not 6 digits', async () => {
         const res = makeRes();
-        await confirmSubscription(makeReq({ params: { subscriptionToken: '' } }), res);
+        await confirmSubscription(makeReq({ params: { subscriptionToken: 'abc' } }), res);
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid subscription token.' });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid token.' });
+    });
+
+    it('returns 400 when token has letters mixed in', async () => {
+        const res = makeRes();
+        await confirmSubscription(makeReq({ params: { subscriptionToken: '12ab56' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('returns 400 when token is too long', async () => {
+        const res = makeRes();
+        await confirmSubscription(makeReq({ params: { subscriptionToken: '1234567' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
     });
 
     it('returns 404 when token is not found in DB', async () => {
@@ -187,7 +252,7 @@ describe('confirmSubscription', () => {
         const res = makeRes();
         await confirmSubscription(makeReq({ params: { subscriptionToken: '123456' } }), res);
         expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ error: 'Subscription not found or was already confirmed.' });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Token not found.' });
     });
 
     it('returns 400 when token has expired', async () => {
@@ -198,9 +263,7 @@ describe('confirmSubscription', () => {
         const res = makeRes();
         await confirmSubscription(makeReq({ params: { subscriptionToken: '123456' } }), res);
         expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({
-            error: 'Confirmation token has expired. Please subscribe again to get a new code.',
-        });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid token.' });
     });
 
     it('returns 200, confirms subscription, and clears token on success', async () => {
@@ -231,6 +294,14 @@ describe('getSubscriptionsForEmail', () => {
         await getSubscriptionsForEmail(makeReq({ query: {} }), res);
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith({ error: 'Invalid email.' });
+    });
+
+    it('returns 400 when email query param is not a valid email', async () => {
+        const res = makeRes();
+        await getSubscriptionsForEmail(makeReq({ query: { email: 'notanemail' } }), res);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ error: 'Invalid email.' });
+        expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
 
     it('returns 200 with empty array when email has no subscriptions', async () => {
@@ -265,9 +336,9 @@ describe('getSubscriptionsForEmail', () => {
 describe('cancelSubscription', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('returns 400 when unsubscribe token is missing', async () => {
+    it('returns 400 when unsubscribe token is missing or invalid format', async () => {
         const res = makeRes();
-        await cancelSubscription(makeReq({ params: { unsubscribeToken: '' } }), res);
+        await cancelSubscription(makeReq({ params: { unsubscribeToken: 'abc' } }), res);
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith({ error: 'Invalid unsubscribe token.' });
     });
@@ -275,9 +346,9 @@ describe('cancelSubscription', () => {
     it('returns 404 when unsubscribe token is not found in DB', async () => {
         vi.mocked(prisma.subscription.findUnique).mockResolvedValueOnce(null);
         const res = makeRes();
-        await cancelSubscription(makeReq({ params: { unsubscribeToken: 'dead' } }), res);
+        await cancelSubscription(makeReq({ params: { unsubscribeToken: '999999' } }), res);
         expect(res.status).toHaveBeenCalledWith(404);
-        expect(res.json).toHaveBeenCalledWith({ error: 'Unsubscribe token not found.' });
+        expect(res.json).toHaveBeenCalledWith({ error: 'Token not found.' });
     });
 
     it('returns 200 and deletes the subscription', async () => {
@@ -289,7 +360,7 @@ describe('cancelSubscription', () => {
         vi.mocked(prisma.subscription.delete).mockResolvedValueOnce({} as any);
 
         const res = makeRes();
-        await cancelSubscription(makeReq({ params: { unsubscribeToken: 'abc12345' } }), res);
+        await cancelSubscription(makeReq({ params: { unsubscribeToken: '123456' } }), res);
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Subscription successfully cancelled.' });

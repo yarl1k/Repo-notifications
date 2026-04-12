@@ -14,6 +14,7 @@ import {
     isTokenExpired,
     setCooldownInQueueConfirmation,
     isEmailOnCooldown,
+    isValidEmail,
 } from './subscription.helpers.js';
 
 // POST /api/subscribe
@@ -21,13 +22,21 @@ export const subscribeToRepo = async (req: Request, res: Response): Promise<void
     try {
         const { email, repo } = req.body;
         if (!email || !repo || typeof email !== 'string' || typeof repo !== 'string') {
-            res.status(400).json({ error: 'Invalid input data type.' });
+            res.status(400).json({ error: 'Invalid input (e.g., invalid repo format).' });
             return;
         }
 
-        const parsed = parseRepoFormat(repo);
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedRepo = repo.trim();
+
+        if (!isValidEmail(trimmedEmail)) {
+            res.status(400).json({ error: 'Invalid input (e.g., invalid repo format).' });
+            return;
+        }
+
+        const parsed = parseRepoFormat(trimmedRepo);
         if (!parsed) {
-            res.status(400).json({ error: 'Repository must be in the format "owner/repo".' });
+            res.status(400).json({ error: 'Invalid input (e.g., invalid repo format).' });
             return;
         }
 
@@ -37,27 +46,27 @@ export const subscribeToRepo = async (req: Request, res: Response): Promise<void
         const fullRepoName = `${owner}/${repoName}`;
         const token = generateConfirmationCode();
         const expiry = getConfirmationExpiry();
-        const existingSub = await findExistingSubscription(email, fullRepoName);
+        const existingSub = await findExistingSubscription(trimmedEmail, fullRepoName);
 
         if (existingSub) {
             if (existingSub.confirmed) {
                 res.status(409).json({ error: 'Email already subscribed to this repository.' });
                 return;
             }
-            if (await isEmailOnCooldown(email)) {
-                res.status(200).json({ message: 'Confirmation email resent.', subscriptionId: existingSub.id });
+            if (await isEmailOnCooldown(trimmedEmail)) {
+                res.status(200).json({ message: 'Subscription successful. Confirmation email sent.', subscriptionId: existingSub.id });
                 return;
             }
 
             const newToken = generateConfirmationCode();
             await refreshConfirmationToken(existingSub.id, newToken, expiry);
-            await setCooldownInQueueConfirmation(email, newToken, fullRepoName);
+            await setCooldownInQueueConfirmation(trimmedEmail, newToken, fullRepoName);
 
-            res.status(200).json({ message: 'Confirmation email resent.', subscriptionId: existingSub.id });
+            res.status(200).json({ message: 'Subscription successful. Confirmation email sent.', subscriptionId: existingSub.id });
             return;
         }
-        const subscription = await createSubscription(email, fullRepoName, token, expiry);
-        await queueConfirmationEmail(email, token, fullRepoName);
+        const subscription = await createSubscription(trimmedEmail, fullRepoName, token, expiry);
+        await queueConfirmationEmail(trimmedEmail, token, fullRepoName);
 
         res.status(200).json({
             message: 'Subscription successful. Confirmation email sent.',
@@ -77,8 +86,8 @@ export const subscribeToRepo = async (req: Request, res: Response): Promise<void
 export const confirmSubscription = async (req: Request, res: Response): Promise<void> => {
     try {
         const token = req.params.subscriptionToken;
-        if (!token || typeof token !== 'string') {
-            res.status(400).json({ error: 'Invalid subscription token.' });
+        if (!token || typeof token !== 'string' || !/^\d{6}$/.test(token)) {
+            res.status(400).json({ error: 'Invalid token.' });
             return;
         }
 
@@ -87,13 +96,13 @@ export const confirmSubscription = async (req: Request, res: Response): Promise<
         });
 
         if (!subscription) {
-            res.status(404).json({ error: 'Subscription not found or was already confirmed.' });
+            res.status(404).json({ error: 'Token not found.' });
             return;
         }
 
         if (isTokenExpired(subscription.confirmationTokenExpiresAt)) {
             res.status(400).json({
-                error: 'Confirmation token has expired. Please subscribe again to get a new code.',
+                error: 'Invalid token.',
             });
             return;
         }
@@ -111,13 +120,15 @@ export const confirmSubscription = async (req: Request, res: Response): Promise<
 export const getSubscriptionsForEmail = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email } = req.query;
-        if (!email || typeof email !== 'string') {
+        if (!email || typeof email !== 'string' || !isValidEmail(email.trim())) {
             res.status(400).json({ error: 'Invalid email.' });
             return;
         }
 
+        const trimmedEmail = email.trim().toLowerCase();
+
         const user = await prisma.user.findUnique({
-            where: { email: email.toLowerCase() },
+            where: { email: trimmedEmail },
             include: {
                 subscriptions: {
                     where: { confirmed: true },
@@ -150,7 +161,7 @@ export const getSubscriptionsForEmail = async (req: Request, res: Response): Pro
 export const cancelSubscription = async (req: Request, res: Response): Promise<void> => {
     try {
         const token = req.params.unsubscribeToken;
-        if (!token || typeof token !== 'string') {
+        if (!token || typeof token !== 'string' || !/^\d{6}$/.test(token)) {
             res.status(400).json({ error: 'Invalid unsubscribe token.' });
             return;
         }
@@ -161,7 +172,7 @@ export const cancelSubscription = async (req: Request, res: Response): Promise<v
         });
 
         if (!subscription) {
-            res.status(404).json({ error: 'Unsubscribe token not found.' });
+            res.status(404).json({ error: 'Token not found.' });
             return;
         }
 

@@ -16,6 +16,7 @@ import {
     getConfirmationExpiry,
     parseRepoFormat,
     isTokenExpired,
+    isValidEmail,
 } from './subscription.helpers.js';
 
 //  Token Generation 
@@ -27,8 +28,8 @@ describe('generateConfirmationCode', () => {
 });
 
 describe('generateUnsubscribeToken', () => {
-    it('returns an 8-character hex string', () => {
-        expect(generateUnsubscribeToken()).toMatch(/^[0-9a-f]{8}$/);
+    it('returns a 6-digit numeric string', () => {
+        expect(generateUnsubscribeToken()).toMatch(/^\d{6}$/);
     });
 });
 
@@ -49,10 +50,64 @@ describe('parseRepoFormat', () => {
         expect(parseRepoFormat('golang/go')).toEqual({ owner: 'golang', repoName: 'go' });
     });
 
+    it('parses repos with hyphens, dots, and underscores', () => {
+        expect(parseRepoFormat('my-org/my_repo.js')).toEqual({ owner: 'my-org', repoName: 'my_repo.js' });
+    });
+
     it('returns null for any invalid format (no slash, empty parts)', () => {
         expect(parseRepoFormat('badformat')).toBeNull();
         expect(parseRepoFormat('owner/')).toBeNull();
         expect(parseRepoFormat('/repo')).toBeNull();
+    });
+
+    it('returns null for extra slashes (owner/repo/extra)', () => {
+        expect(parseRepoFormat('owner/repo/extra')).toBeNull();
+    });
+
+    it('returns null for special characters (XSS attempt)', () => {
+        expect(parseRepoFormat('owner/<script>')).toBeNull();
+        expect(parseRepoFormat('owner/repo; rm -rf')).toBeNull();
+    });
+
+    it('returns null for path traversal attempts', () => {
+        expect(parseRepoFormat('../etc/passwd')).toBeNull();
+        expect(parseRepoFormat('owner/..hidden')).toBeNull();
+    });
+
+    it('returns null when owner exceeds 39 chars', () => {
+        expect(parseRepoFormat('a'.repeat(40) + '/repo')).toBeNull();
+    });
+});
+
+//  isValidEmail
+
+describe('isValidEmail', () => {
+    it('returns true for valid emails', () => {
+        expect(isValidEmail('user@example.com')).toBe(true);
+        expect(isValidEmail('first.last@domain.org')).toBe(true);
+        expect(isValidEmail('user+tag@sub.domain.com')).toBe(true);
+    });
+
+    it('returns false for strings without @', () => {
+        expect(isValidEmail('12121')).toBe(false);
+        expect(isValidEmail('justastring')).toBe(false);
+    });
+
+    it('returns false for strings without a TLD', () => {
+        expect(isValidEmail('user@host')).toBe(false);
+    });
+
+    it('returns false for TLD shorter than 2 chars', () => {
+        expect(isValidEmail('user@host.a')).toBe(false);
+    });
+
+    it('returns false for empty strings and whitespace', () => {
+        expect(isValidEmail('')).toBe(false);
+        expect(isValidEmail('   ')).toBe(false);
+    });
+
+    it('returns false for emails exceeding 254 chars', () => {
+        expect(isValidEmail('a'.repeat(250) + '@b.com')).toBe(false);
     });
 });
 

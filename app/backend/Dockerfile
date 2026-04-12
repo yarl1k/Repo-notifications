@@ -46,6 +46,8 @@ COPY --chown=node:node app/backend/package.json ./app/backend/package.json
 COPY --chown=node:node app/backend/database ./app/backend/database
 COPY --chown=node:node app/backend/prisma.config.ts ./app/backend/prisma.config.ts
 
+
+COPY --chown=node:node app/backend/swagger.yaml ./app/backend/swagger.yaml
 COPY --chown=node:node app/frontend ./app/frontend
 
 COPY --from=deps --chown=node:node /usr/src/app/node_modules ./node_modules

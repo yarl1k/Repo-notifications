@@ -8,16 +8,39 @@ export const generateConfirmationCode = (): string =>
     crypto.randomInt(100000, 999999).toString();
 
 export const generateUnsubscribeToken = (): string =>
-    crypto.randomBytes(4).toString('hex');
+    crypto.randomInt(100000, 999999).toString();
 
 /** Returns a Date 30 minutes from now. */
 export const getConfirmationExpiry = (): Date =>
     new Date(Date.now() + 30 * 60 * 1000);
 
 
+/** Validates email format: must have local@domain.tld structure, max 254 chars. */
+export const isValidEmail = (email: string): boolean => {
+    if (email.length > 254) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+};
+
+/**
+ * Validates and parses owner/repo format.
+ * - Must be exactly two segments separated by a single slash
+ * - Segments must start with an alphanumeric character
+ * - Only alphanumeric, hyphens, dots, and underscores allowed (matching GitHub rules)
+ * - Owner max 39 chars, repo max 100 chars
+ * - No consecutive dots (prevents path traversal)
+ */
 export const parseRepoFormat = (repo: string): { owner: string; repoName: string } | null => {
-    const [owner, repoName] = repo.split('/');
+    const parts = repo.split('/');
+    if (parts.length !== 2) return null;
+
+    const [owner, repoName] = parts;
     if (!owner || !repoName) return null;
+    if (owner.length > 39 || repoName.length > 100) return null;
+
+    const segmentRegex = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
+    if (!segmentRegex.test(owner) || !segmentRegex.test(repoName)) return null;
+    if (owner.includes('..') || repoName.includes('..')) return null;
+
     return { owner, repoName };
 };
 
