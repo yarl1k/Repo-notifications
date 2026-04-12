@@ -13,6 +13,7 @@ import {
     confirmSubscriptionRecord,
     isTokenExpired,
     setCooldownInQueueConfirmation,
+    isEmailOnCooldown,
 } from './subscription.helpers.js';
 
 // POST /api/subscribe
@@ -41,6 +42,10 @@ export const subscribeToRepo = async (req: Request, res: Response): Promise<void
         if (existingSub) {
             if (existingSub.confirmed) {
                 res.status(409).json({ error: 'Email already subscribed to this repository.' });
+                return;
+            }
+            if (await isEmailOnCooldown(email)) {
+                res.status(200).json({ message: 'Confirmation email resent.', subscriptionId: existingSub.id });
                 return;
             }
 

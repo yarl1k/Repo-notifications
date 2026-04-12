@@ -17,7 +17,7 @@ const GITHUB_BASE_URL = 'https://github.com';
 export const sendMail = async (email: string, subject: string, htmlToSend: string): Promise<void> => {
     try {
         await transporter.sendMail({
-            from: process.env.SMTP_USER,
+            from: process.env.SMTP_USER_FROM,
             to: email,
             subject: subject,
             html: htmlToSend

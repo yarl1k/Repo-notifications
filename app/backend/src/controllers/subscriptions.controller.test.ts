@@ -129,7 +129,6 @@ describe('subscribeToRepo', () => {
     it('returns 200 but skips resending email when active cooldown exists', async () => {
         vi.mocked(validateRepo).mockResolvedValueOnce({ id: 1 } as any);
         vi.mocked(prisma.subscription.findFirst).mockResolvedValueOnce({ id: 'x', confirmed: false } as any);
-        vi.mocked(prisma.subscription.update).mockResolvedValueOnce({} as any);
         vi.mocked(redisConnection.get).mockResolvedValueOnce('true');
 
         const res = makeRes();
@@ -137,6 +136,7 @@ describe('subscribeToRepo', () => {
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect((vi.mocked(res.json).mock.calls[0]?.[0] as any).message).toBe('Confirmation email resent.');
+        expect(prisma.subscription.update).not.toHaveBeenCalled();
         expect(emailQueue.add).not.toHaveBeenCalled();
     });
 
