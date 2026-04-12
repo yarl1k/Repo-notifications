@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repo Notifications</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --border: #30363d;
+            --primary: #238636;
+            --danger: #f85149;
+            --success: #3fb950;
+            --input-bg: #010409;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem;
+            text-align: center;
+            color: #fff;
+        }
+
+        p.sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+            background: var(--primary);
+        }
+
+        /* Єдина динаміка - ефект натискання */
+        button:active {
+            opacity: 0.8;
+        }
+
+        button:disabled {
+            background: var(--border);
+            color: var(--muted);
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-nav {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid transparent;
+            width: auto;
+            flex: 1;
+            padding: 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-nav.active {
+            color: var(--text);
+            border-color: var(--primary);
+        }
+
+        #navUnsubscribe.active {
+            border-color: var(--danger);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        .msg {
+            margin-top: 1.2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            min-height: 1.2rem;
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        .success {
+            color: var(--success);
+        }
+
+        .loader {
+            border: 2px solid transparent;
+            border-top-color: #fff;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .subs-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .subs-list li {
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .subs-list span {
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Repo Notifications</h1>
+        <p class="sub" id="subText">Subscribe to get instant alerts on your favorite GitHub repositories.</p>
+
+        <div class="nav">
+            <button class="btn-nav active" onclick="switchTab('sub')">Subscribe</button>
+            <button class="btn-nav" id="navUnsubscribe" onclick="switchTab('unsub')">Unsubscribe</button>
+            <button class="btn-nav" onclick="switchTab('list')">My Subs</button>
+        </div>
+
+        <div id="view-sub" class="view">
+            <div id="sub-step1">
+                <div class="form-group"><label>Email Address</label><input id="email" placeholder="hello@example.com">
+                </div>
+                <div class="form-group"><label>GitHub Repository</label><input id="repo" placeholder="owner/repo"></div>
+                <button id="btn-sub" onclick="handleSub()">Subscribe</button>
+            </div>
+            <div id="sub-step2" class="hidden">
+                <p style="font-size:0.9rem;margin-bottom:1rem">A confirmation code has been sent to your email. It
+                    expires in 30 minutes.</p>
+                <div class="form-group"><label>Confirmation Code</label><input id="code" placeholder="6-digit code">
+                </div>
+                <button id="btn-conf" onclick="handleConf()">Confirm Subscription</button>
+            </div>
+        </div>
+
+        <div id="view-unsub" class="view hidden">
+            <p style="font-size:0.9rem;margin-bottom:1rem">Enter the unsubscription code found at the bottom of your
+                emails.</p>
+            <div class="form-group"><label>Unsubscribe Code</label><input id="unsubCode" placeholder="e.g. 8f2a1b3c">
+            </div>
+            <button class="btn-danger" id="btn-unsub" onclick="handleUnsub()">Confirm Unsubscribe</button>
+        </div>
+
+        <div id="view-list" class="view hidden">
+            <div class="form-group"><label>Email Address</label><input id="listEmail" placeholder="hello@example.com">
+            </div>
+            <button id="btn-list" onclick="handleList()">Get Subscriptions</button>
+            <div id="subsResult" class="hidden" style="margin-top:1.5rem">
+                <h3
+                    style="font-size:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; margin:0 0 0.5rem">
+                    Your Subscriptions</h3>
+                <ul id="subsUl" class="subs-list"></ul>
+            </div>
+        </div>
+
+        <div id="msg" class="msg"></div>
+    </div>
+
+    <script>
+        const views = { sub: 'view-sub', unsub: 'view-unsub', list: 'view-list' };
+        const texts = {
+            sub: 'Subscribe to get instant alerts on your favorite GitHub repositories.',
+            unsub: 'Unsubscribe from alerts using a code from your email.',
+            list: 'View all your current active subscriptions.'
+        };
+
+        // Tab switch
+        function switchTab(tab) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(views[tab]).classList.remove('hidden');
+
+            document.querySelectorAll('.btn-nav').forEach((b, i) => b.classList.toggle('active', i === ['sub', 'unsub', 'list'].indexOf(tab)));
+            document.getElementById('subText').textContent = texts[tab];
+            showMsg('');
+        }
+
+        function showMsg(txt, type = '') {
+            const m = document.getElementById('msg');
+            m.textContent = txt; m.className = 'msg ' + type;
+        }
+
+        // Api requests
+        async function req(url, btnId, defaultText, opts = {}) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = true;
+            btn.innerHTML = `<span class="loader"></span> Loading...`;
+            showMsg('');
+            try {
+                const res = await fetch(url, opts);
+                const data = await res.json();
+                return { ok: res.ok, data };
+            } catch {
+                showMsg('Server unreachable. Check your connection.', 'error');
+                return { ok: false };
+            } finally {
+                btn.disabled = false;
+                btn.textContent = defaultText;
+            }
+        }
+
+        // --- Обробники кнопок ---
+
+        async function handleSub() {
+            const email = document.getElementById('email').value.trim();
+            const repo = document.getElementById('repo').value.trim();
+            if (!repo || !email) return showMsg('Email and Repository are required.', 'error');
+
+            const { ok, data } = await req('/api/subscribe', 'btn-sub', 'Subscribe', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, repo })
+            });
+            if (ok) {
+                showMsg('Success! Check your email for the confirmation code.', 'success');
+                document.getElementById('sub-step1').classList.add('hidden');
+                document.getElementById('sub-step2').classList.remove('hidden');
+            } else if (data) showMsg(data.error || 'An error occurred.', 'error');
+        }
+
+        async function handleConf() {
+            const code = document.getElementById('code').value.trim();
+            if (!code) return showMsg('Please enter the code.', 'error');
+
+            const { ok, data } = await req(`/api/confirm/${encodeURIComponent(code)}`, 'btn-conf', 'Confirm Subscription');
+            if (ok) {
+                showMsg('Subscription completely confirmed!', 'success');
+                document.getElementById('sub-step2').classList.add('hidden');
+                document.getElementById('sub-step1').classList.remove('hidden');
+                ['email', 'repo', 'code'].forEach(id => document.getElementById(id).value = '');
+            } else if (data) showMsg(data.error || 'Invalid code.', 'error');
+        }
+
+        async function handleUnsub() {
+            const code = document.getElementById('unsubCode').value.trim();
+            if (!code) return showMsg('Please enter the code.', 'error');
+
+            const { ok, data } = await req(`/api/unsubscribe/${encodeURIComponent(code)}`, 'btn-unsub', 'Confirm Unsubscribe');
+            if (ok) {
+                showMsg('Successfully unsubscribed.', 'success');
+                document.getElementById('unsubCode').value = '';
+            } else if (data) showMsg(data.error || 'Invalid code.', 'error');
+        }
+
+        async function handleList() {
+            const email = document.getElementById('listEmail').value.trim();
+            if (!email) return showMsg('Please enter your email.', 'error');
+
+            document.getElementById('subsResult').classList.add('hidden');
+            const ul = document.getElementById('subsUl');
+            ul.innerHTML = '';
+
+            const { ok, data } = await req(`/api/subscriptions?email=${encodeURIComponent(email)}`, 'btn-list', 'Get Subscriptions');
+            if (ok) {
+                if (!data.length) showMsg('No subscriptions found.');
+                else {
+                    data.forEach(s => {
+                        ul.innerHTML += `<li><strong>${s.repo}</strong><span>${s.last_seen_tag ? 'Tag: ' + s.last_seen_tag : 'No tags'}</span></li>`;
+                    });
+                    document.getElementById('subsResult').classList.remove('hidden');
+                }
+            } else if (data) showMsg(data.error || 'An error occurred.', 'error');
+        }
+    </script>
+</body>
+
+</html>
