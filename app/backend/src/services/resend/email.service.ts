@@ -1,7 +1,7 @@
-import transporter from '../nodemailer/transporter.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Resend } from 'resend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,11 +13,13 @@ const notificationTemplate = fs.readFileSync(path.join(templatesDir, 'release.ht
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000/api';
 const GITHUB_BASE_URL = 'https://github.com';
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export const sendMail = async (email: string, subject: string, htmlToSend: string): Promise<void> => {
     try {
-        await transporter.sendMail({
-            from: process.env.SMTP_USER_FROM,
-            to: email,
+        const { data, error } = await resend.emails.send({
+            from: process.env.RESEND_USER_FROM || '"RepoNotify" <noreply@yarl1k.tech>',
+            to: [email],
             subject: subject,
             html: htmlToSend
         });
