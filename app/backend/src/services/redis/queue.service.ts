@@ -15,6 +15,14 @@ export const emailQueue = new Queue("email-queue", {
             type: "exponential",
             delay: 1000,
         },
+        removeOnComplete: {
+            count: 100,
+            age: 600, // 10m
+        },
+        removeOnFail: {
+            count: 500,
+            age: 24 * 3600 // 24h
+        }
     },
 });
 

@@ -4,7 +4,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-  <title>Новий реліз: {{repo_name}}</title>
+  <title>New release: {{repo_name}}</title>
   <style type="text/css" rel="stylesheet" media="all">
     body {
       font-family: Arial, sans-serif;
@@ -118,31 +118,36 @@
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0">
           <tr>
-            <td class="email-masthead"><a class="email-masthead_name">GitNotify API</a></td>
+            <td class="email-masthead"><a class="email-masthead_name">Repo Notify</a></td>
           </tr>
           <tr>
             <td class="email-body" width="100%">
               <table class="email-body_inner" align="center" width="570" cellpadding="0" cellspacing="0">
                 <tr>
                   <td class="content-cell">
-                    <h1>Зустрічайте новий реліз! 🚀</h1>
-                    <p>Для репозиторію <b>{{repo_name}}</b> щойно вийшла нова версія: <b>{{release_tag}}</b>.</p>
+                    <h1>New release for {{repo_name}}! 🚀</h1>
+                    <p>A new version has been released for the repository <b>{{repo_name}}</b>: <b>{{release_tag}}</b>.
+                    </p>
                     <table class="body-action" align="center" width="100%" cellpadding="0" cellspacing="0">
                       <tr>
                         <td align="center">
                           <div>
-                            <a href="{{release_link}}" class="button">Переглянути реліз</a>
+                            <a href="{{release_link}}" class="button">View release</a>
                           </div>
                         </td>
                       </tr>
                     </table>
-                    <p>Приємного кодингу!<br></p>
+                    <p>Happy coding!<br></p>
                     <table class="body-sub">
                       <tr>
                         <td>
-                          <p class="sub">Ви отримали цей лист, бо підписані на оновлення цього репозиторію. Якщо ви
-                            більше не хочете отримувати ці сповіщення, ви можете використати код відписки:
-                            <strong>{{unsubscribe_code}}</strong> на нашому сайті.</p>
+                          <p class="sub">
+                            You received this email because you are subscribed to notifications about new releases for
+                            this repository.
+                            If you no longer wish to receive these notifications,
+                            you can use the unsubscribe code: <strong>{{unsubscribe_code}}</strong>
+                            on our website.
+                          </p>
                         </td>
                       </tr>
                     </table>
@@ -156,7 +161,7 @@
               <table class="email-footer" align="center" width="570" cellpadding="0" cellspacing="0">
                 <tr>
                   <td class="content-cell">
-                    <p class="sub center">GitNotify Service<br>GitHub Release Notification API</p>
+                    <p class="sub center">Repo Notify<br>GitHub Release Notification Service</p>
                   </td>
                 </tr>
               </table>
