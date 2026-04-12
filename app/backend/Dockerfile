@@ -24,8 +24,6 @@ COPY app/backend/prisma.config.ts ./app/backend/prisma.config.ts
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --filter ./app/backend --frozen-lockfile
 
-
-
 ################################################################################
 FROM deps AS build
 
@@ -47,6 +45,8 @@ COPY --chown=node:node pnpm-workspace.yaml ./
 COPY --chown=node:node app/backend/package.json ./app/backend/package.json
 COPY --chown=node:node app/backend/database ./app/backend/database
 COPY --chown=node:node app/backend/prisma.config.ts ./app/backend/prisma.config.ts
+
+COPY --chown=node:node app/frontend ./app/frontend
 
 COPY --from=deps --chown=node:node /usr/src/app/node_modules ./node_modules
 COPY --from=deps --chown=node:node /usr/src/app/app/backend/node_modules ./app/backend/node_modules

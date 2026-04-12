@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import mainRouter from "./routers/index.js";
 import { initScanner } from './services/scanner/scanner.service.js';
 import './services/redis/queue.service.js';
@@ -9,11 +11,16 @@ import rateLimit from 'express-rate-limit';
 import { metrics } from './services/metrics.service.js';
 import { requireApiKeyAuth } from './services/middlewares/auth.middleware.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 app.set('trust proxy', 1);
 
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false,
+}));
 
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -21,16 +28,13 @@ const apiLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: 'Too many requests from this IP, please try again after 15 minutes',
-})
-app.use('/api', apiLimiter);
+});
 
+app.use('/api', apiLimiter);
 app.use(express.json());
 
 app.use('/api', mainRouter);
 
-app.get('/', (req, res) => {
-    res.json({ message: 'API is running' });
-});
 
 app.get('/metrics', requireApiKeyAuth, async (req, res) => {
     try {
@@ -42,6 +46,13 @@ app.get('/metrics', requireApiKeyAuth, async (req, res) => {
         res.status(500).json({ error: error.message || 'An error occurred while getting metrics.' });
     }
 });
+
+const frontendPath = path.join(__dirname, '../../frontend');
+app.use(express.static(frontendPath));
+
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+});
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
@@ -50,7 +61,7 @@ const startServer = async () => {
         console.log('Database connected successfully.');
 
         app.listen(PORT, () => {
-            console.log(`API Сервер запущено на http://localhost:${PORT}`);
+            console.log(`API Сервер запущено на порту ${PORT}`);
         });
 
         initScanner();

@@ -1,16 +1,4 @@
 services:
-  frontend:
-    build:
-      context: ./app/frontend
-      dockerfile: Dockerfile
-    restart: always
-    ports:
-      - "${FRONTEND_PORT:-80}:80"
-    depends_on:
-      - app
-    networks:
-      - prisma-network
-
   postgres:
     image: postgres:17-alpine
     restart: always
@@ -18,14 +6,11 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
-      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
-    ports:
-      - "${POSTGRES_EXTERNAL_PORT:-5432}:5432"
     networks:
       - prisma-network
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
     volumes:
@@ -38,27 +23,19 @@ services:
   redis:
     image: redis:8.6.2-alpine
     restart: always
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
     networks:
       - prisma-network
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli ping" ]
-      interval: 5s
+      interval: 10s
       timeout: 3s
       retries: 5
     volumes:
       - redis_data:/data
-
-  redisinsight:
-    image: redis/redisinsight:latest
-    restart: always
-    ports:
-      - "${REDISINSIGHT_PORT:-5540}:5540"
-    networks:
-      - prisma-network
-    depends_on:
-      - redis
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   app:
     build:
@@ -66,7 +43,7 @@ services:
       dockerfile: ./app/backend/Dockerfile
     restart: always
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - "127.0.0.1:${PORT:-3000}:3000"
     env_file:
       - .env
     environment:
@@ -79,6 +56,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   prisma-network:
