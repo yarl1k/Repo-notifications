@@ -7,7 +7,6 @@ import './services/redis/queue.service.js';
 import { prisma } from './services/prisma_setup/database.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import cors from 'cors';
 import { metrics } from './services/metrics.service.js';
 import { requireApiKeyAuth } from './services/middlewares/auth.middleware.js';
 
@@ -17,8 +16,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.set('trust proxy', 1);
-
-app.use(cors());
 
 app.use(helmet({
     contentSecurityPolicy: false,
@@ -37,6 +34,22 @@ app.use(express.json());
 
 app.use('/api', mainRouter);
 
+if (process.env.NODE_ENV !== 'production') {
+    try {
+        const { default: swaggerUi } = await import('swagger-ui-express');
+        const { default: YAML } = await import('yaml');
+        const fs = await import('fs');
+
+        const swaggerPath = path.join(__dirname, '../swagger.yaml');
+        const fileContents = fs.readFileSync(swaggerPath, 'utf-8');
+        const swaggerDoc = YAML.parse(fileContents);
+
+        app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+        console.log('📘 [Swagger] UI available at http://localhost:3000/api-docs');
+    } catch (error) {
+        console.error('❌ [Swagger] Помилка завантаження:', error);
+    }
+}
 
 app.get('/metrics', requireApiKeyAuth, async (req, res) => {
     try {
