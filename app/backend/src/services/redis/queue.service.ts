@@ -3,7 +3,6 @@ import { Queue, Worker, Job } from "bullmq";
 import {
     sendEmailNotification,
     sendEmailSubscriptionConfirmation,
-    sendEmailUnsubscriptionNotify
 } from "../nodemailer/email.service.js";
 import { redisConnection } from "./redis.setup.js";
 import { emailsSentCounter } from "../metrics.service.js";
@@ -27,10 +26,6 @@ const emailWorker = new Worker('email-queue', async (job: Job) => {
         if (type === "subscription_confirmation") {
             await sendEmailSubscriptionConfirmation(data.email, data.token, data.repoName);
             emailsSentCounter.inc({ email_type: 'subscription_confirmation' });
-        }
-        else if (type === "unsubscription_notify") {
-            await sendEmailUnsubscriptionNotify(data.email, data.repoName);
-            emailsSentCounter.inc({ email_type: 'unsubscription_notify' });
         }
         else if (type === "release_notification") {
             await sendEmailNotification(data.email, data.releaseTag, data.repoName, data.unsubscribeToken);
